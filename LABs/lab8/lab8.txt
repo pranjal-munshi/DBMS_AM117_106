@@ -1,0 +1,182 @@
+PES1UG22AM106> SELECT Item_name,
+    ->      CASE
+    ->          WHEN TIME(timestamp) < '12:00:00' THEN 'Morning'
+    ->          WHEN TIME(timestamp) BETWEEN '12:00:00' AND '15:00:00' THEN 'Afternoon'
+    ->          ELSE 'Evening'
+    ->      END AS Time_of_day,
+    ->      SUM(quantity) AS quantity
+    -> FROM purchased
+    -> GROUP BY Item_name, Time_of_day
+    -> ORDER BY Item_name, Time_of_day;
+
++-------------------------+-------------+----------+
+| Item_name               | Time_of_day | quantity |
++-------------------------+-------------+----------+
+| Bacon-Wrapped Shrimp    | Evening     |        2 |
+| BBQ Chicken Sandwich    | Afternoon   |        2 |
+| BBQ Chicken Sandwich    | Evening     |        1 |
+| Cappers Salad           | Afternoon   |        3 |
+| Chicken Noodle Soup     | Afternoon   |        8 |
+| Chicken Noodle Soup     | Morning     |        2 |
+| Classic Caesar Salad    | Afternoon   |        3 |
+| Classic Caesar Salad    | Morning     |        5 |
+| Fish Tacos              | Afternoon   |        9 |
+| Fish Tacos              | Evening     |        6 |
+| Fish Tacos              | Morning     |        9 |
+| Grilled Steak           | Afternoon   |        2 |
+| Grilled Steak           | Morning     |        4 |
+| Margherita Pizza        | Afternoon   |        2 |
+| Margherita Pizza        | Morning     |        2 |
+| Mushroom Risotto        | Afternoon   |        6 |
+| Mushroom Risotto        | Evening     |        1 |
+| Mutton Stroganoff       | Afternoon   |        2 |
+| Shrimp Scampi           | Afternoon   |        3 |
+| Shrimp Scampi           | Evening     |        2 |
+| Shrimp Scampi           | Morning     |        3 |
+| Spinach and Feta Omelette| Afternoon  |        1 |
+| Spinach and Feta Omelette| Morning    |        2 |
+| Vegetable Pad Thai      | Afternoon   |        3 |
+| Vegetable Stir-Fry      | Afternoon   |        4 |
+| Vegetable Stir-Fry      | Evening     |        5 |
+| Vegetable Stir-Fry      | Morning     |        2 |
+| Veggie Wrap             | Afternoon   |        3 |
+| Veggie Wrap             | Morning     |        7 |
++------------------------+-------------+----------+
+29 rows in set (0.01 sec)
+
+PES1UG22AM106> SELECT r.event_id, e.event_name, p.department AS Dept_with_max_students_enrolled
+    -> FROM registration r
+    -> JOIN participant p ON r.SRN = p.SRN
+    -> JOIN event e ON r.event_id = e.event_id
+    -> GROUP BY r.event_id, p.department
+    -> HAVING Dept_with_max_students_enrolled != 'Computer Science';
+
++-----------+-----------------------+----------------------------------+
+| event_id  | event_name            | Dept_with_max_students_enrolled  |
++-----------+-----------------------+----------------------------------+
+| E1        | Adventure Trek        | Electrical                       |
+| E11       | Art Workshop          | Electrical                       |
+| E16       | Poetry Slam           | Electrical                       |
+| E21       | Stage Setup           | Electrical                       |
+| E23       | Event Coordination    | Electrical                       |
+| E26       | Food Tasting          | Electrical                       |
+| E31       | Writing Competition   | Electrical                       |
+| E32       | Poetry Recitation     | Electrical                       |
+| E6        | Robot Wars            | Electrical                       |
+| E7        | Tech Expo             | Electrical                       |
+| E1        | Adventure Trek        | Mechanical                       |
+| E11       | Art Workshop          | Mechanical                       |
+| E16       | Poetry Slam           | Mechanical                       |
+| E21       | Stage Setup           | Mechanical                       |
+| E23       | Event Coordination    | Mechanical                       |
+| E26       | Food Tasting          | Mechanical                       |
+| E31       | Writing Competition   | Mechanical                       |
+| E32       | Poetry Recitation     | Mechanical                       |
+| E6        | Robot Wars            | Mechanical                       |
+| E1        | Adventure Trek        | Civil                            |
+| E11       | Art Workshop          | Civil                            |
+| E16       | Poetry Slam           | Civil                            |
+| E20       | Hackathon             | Civil                            |
+| E21       | Stage Setup           | Civil                            |
+| E23       | Event Coordination    | Civil                            |
+| E26       | Food Tasting          | Civil                            |
+| E31       | Writing Competition   | Civil                            |
+| E32       | Poetry Recitation     | Civil                            |
+| E5        | Code Jam              | Civil                            |
+| E6        | Robot Wars            | Civil                            |
+| E9        | Drama Play            | Civil                            |
+| E1        | Adventure Trek        | Chemical                         |
+| E10       | Music Concert         | Chemical                         |
+| E11       | Art Workshop          | Chemical                         |
+| E16       | Poetry Slam           | Chemical                         |
+| E20       | Hackathon             | Chemical                         |
+| E21       | Stage Setup           | Chemical                         |
+| E23       | Event Coordination    | Chemical                         |
++-----------+----------------------+-----------------------------------+
+
+PES1UG22AM106> SELECT e.event_id, e.event_name
+    -> FROM event e
+    -> WHERE EXISTS (
+    ->    SELECT 1
+    ->    FROM event_conduction ec
+    ->    WHERE ec.event_id = 'E1'
+    ->    AND ec.date_of_conduction IN (
+    ->        SELECT ec2.date_of_conduction
+    ->        FROM event_conduction ec2
+    ->        WHERE ec2.event_id = e.event_id
+    ->    )
+    -> );
++----------+-----------------+
+| event_id | event_name       |
++----------+-----------------+
+| E1       | Adventure Trek   |
+| E6       | Robot Wars       |
++----------+-----------------+
+2 rows in set (0.01 sec)
+
+PES1UG22AM106> SELECT s.stall_id, s.name AS stall_name
+    -> FROM stall s
+    -> WHERE NOT EXISTS (
+    ->    SELECT 1
+    ->    FROM item i
+    ->    WHERE i.type = 'Non-Veg'
+    ->    AND NOT EXISTS (
+    ->        SELECT 1
+    ->        FROM stall_items si
+    ->        WHERE si.stall_id = s.stall_id
+    ->        AND si.item_name = i.name
+    ->    )
+    -> )
+    -> ORDER BY s.stall_id;
+Empty set (0.03 sec)
+
+PES1UG22AM106> WITH ParticipantCounts AS (
+    ->        SELECT
+    ->                r.event_id,
+    ->                COUNT(DISTINCT r.SRN) AS participant_count,
+    ->                COUNT(r.SRN) AS total_participants
+    ->        FROM registration r
+    ->        GROUP BY r.event_id, r.Registration_ID
+    ->)
+    ->	      SELECT
+    ->        e.event_name,
+    ->        CASE
+    ->                WHEN MAX(pc.participant_count) > 1 THEN 'Group event'
+    ->                ELSE 'Individual event'
+    ->        END AS Type_of_event,
+    ->        COALESCE(MAX(pc.participant_count), 1) AS Max_participants,
+    ->        COALESCE(MIN(pc.participant_count), 1) AS Min_participants
+    ->FROM event e
+    ->LEFT JOIN ParticipantCounts pc ON e.event_id = pc.event_id
+    ->GROUP BY e.event_id, e.event_name
+    ->ORDER BY Max_participants DESC, Min_participants ASC;
++------------------------------+-----------------+------------------+------------------+
+| event_name                   | Type_of_event   | Max_participants | Min_participants |
++------------------------------+-----------------+------------------+------------------+
+| Drama Play                   | Group event     |                3 |                1 |
+| Music Concert                | Group event     |                2 |                1 |
+| Hackathon                    | Group event     |                2 |                1 |
+| Sound and Lighting           | Group event     |                2 |                1 |
+| Code Jam                     | Group event     |                2 |                1 |
+| Tech Expo                    | Group event     |                2 |                1 |
+| Adventure Trek               | Group event     |                2 |                2 |
+| Escape Room Challenge        | Group event     |                2 |                2 |
+| Art Workshop                 | Individual event|                1 |                1 |
+| Film Screening               | Individual event|                1 |                1 |
+| Traditional Dance wars       | Individual event|                1 |                1 |
+| Singing Contest              | Individual event|                1 |                1 |
+| Fashion Exhibition           | Individual event|                1 |                1 |
+| Poetry Slam                  | Individual event|                1 |                1 |
+| Quiz Competition             | Individual event|                1 |                1 |
+| Tech Talk                    | Individual event|                1 |                1 |
+| Web Design Contest           | Individual event|                1 |                1 |
+| Paintball Tournament         | Individual event|                1 |                1 |
+| Stage Setup                  | Individual event|                1 |                1 |
+| Event Coordination           | Individual event|                1 |                1 |
+| Volunteer Management         | Individual event|                1 |                1 |
+| Baking Competition           | Individual event|                1 |                1 |
+| Food Tasting                 | Individual event|                1 |                1 |
+| Cooking Workshop             | Individual event|                1 |                1 |
++------------------------------+-----------------+------------------+------------------+
+
+PES1UG22AM106>
